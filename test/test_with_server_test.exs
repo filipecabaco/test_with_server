@@ -13,7 +13,7 @@ defmodule TestWithServerTest do
                      )
                    ] do
     id = Enum.random(1..100) |> Integer.to_string()
-    assert Req.get!("http://localhost:4000/#{id}").body == "ok"
+    assert Req.get!("http://localhost:5000/#{id}").body == "ok"
     assert_receive {:ok, ^id}
   end
 
@@ -21,7 +21,7 @@ defmodule TestWithServerTest do
                    [
                      quote(do: get("hello", fn _conn -> "world" end))
                    ] do
-    assert Req.get!("http://localhost:4000/hello").body == "world"
+    assert Req.get!("http://localhost:5000/hello").body == "world"
   end
 
   describe "with setup context" do
@@ -32,11 +32,11 @@ defmodule TestWithServerTest do
     test_with_server "contains usable context in test block", %{port: port}, [
       quote(do: get("hello", fn _conn -> "world" end))
     ] do
-      assert Req.get!("http://localhost:4000/hello").body == "world"
+      assert Req.get!("http://localhost:5000/hello").body == "world"
       assert port
     end
 
-    test_with_server "contains usable context in test block and bandit options that understand context",
+    test_with_server "contains usable context in test block and server options that understand context",
                      %{port: port},
                      [
                        quote(do: get("hello", fn _conn -> "world" end))
@@ -44,6 +44,12 @@ defmodule TestWithServerTest do
                      port: port do
       assert Req.get!("http://localhost:#{port}/hello").body == "world"
       assert port
+    end
+
+    test_with_server "handler can access test", %{port: port}, [
+      quote(do: get("hello", fn _conn -> @context.port |> Integer.to_string() end))
+    ] do
+      assert Req.get!("http://localhost:5000/hello").body == port |> Integer.to_string()
     end
   end
 end

@@ -6,8 +6,8 @@ defmodule TestWithServer do
       import Francis
 
       test unquote(test_name), unquote(context) do
-        server = TestWithServer.start_server(self(), unquote(handlers))
-        start_supervised!({Bandit, [plug: server] ++ unquote(opts)})
+        server = TestWithServer.start_server(self(), unquote(handlers), unquote(context))
+        start_supervised!({Bandit, [plug: server] ++ unquote(Keyword.merge([port: 5000], opts))})
         unquote(test_block)
       end
     end
@@ -18,8 +18,8 @@ defmodule TestWithServer do
       import Francis
 
       test unquote(test_name), unquote(context) do
-        server = TestWithServer.start_server(self(), unquote(handlers))
-        start_supervised!({Bandit, [plug: server]})
+        server = TestWithServer.start_server(self(), unquote(handlers), unquote(context))
+        start_supervised!({Bandit, [plug: server, port: 5000]})
         unquote(test_block)
       end
     end
@@ -31,7 +31,7 @@ defmodule TestWithServer do
 
       test unquote(test_name) do
         server = TestWithServer.start_server(self(), unquote(handlers))
-        start_supervised!({Bandit, [plug: server] ++ unquote(opts)})
+        start_supervised!({Bandit, [plug: server] ++ unquote(Keyword.merge([port: 5000], opts))})
         unquote(test_block)
       end
     end
@@ -43,16 +43,19 @@ defmodule TestWithServer do
 
       test unquote(test_name) do
         server = TestWithServer.start_server(self(), unquote(handlers))
-        start_supervised!({Bandit, plug: server})
+        start_supervised!({Bandit, plug: server, port: 5000})
         unquote(test_block)
       end
     end
   end
 
-  def start_server(pid, handlers) do
+  def start_server(pid, handlers, context \\ %{}) do
     ast =
       quote location: :keep do
+        # Module.register_attribute(__MODULE__, :test_context, accumulate: false, persist: true)
+        Module.put_attribute(__MODULE__, :context, unquote(Macro.escape(context)))
         use Francis
+
         unquote_splicing(handlers)
 
         def send_to_test(message), do: send(unquote(pid), message)
