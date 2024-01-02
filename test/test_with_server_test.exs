@@ -52,4 +52,17 @@ defmodule TestWithServerTest do
       assert Req.get!("http://localhost:5000/hello").body == port |> Integer.to_string()
     end
   end
+
+  setup do
+    %{port: Enum.random(4000..5000)}
+  end
+
+  test_with_server "using context",
+                   %{port: port},
+                   [
+                     quote(do: get("hello", fn _conn -> "ok" end))
+                   ],
+                   port: port do
+    assert Req.get!("http://localhost:#{port}/hello").body == "ok"
+  end
 end
